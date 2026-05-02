@@ -1,225 +1,422 @@
 import React, { useState, useEffect, useRef } from 'react';
 import {
   View, Text, StyleSheet, ScrollView, Pressable, TextInput,
-  Platform, Alert, useColorScheme, StatusBar
+  Platform, Alert, useColorScheme, StatusBar, Image, FlatList, Dimensions
 } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { Ionicons } from '@expo/vector-icons';
+import { Video } from 'expo-av';
 
-// ------------------------- Helper: Get theme colors -------------------------
+const { width } = Dimensions.get('window');
+const isWeb = Platform.OS === 'web';
+
+// ------------------------- Premium Theme -------------------------
 const getColors = (isDark) => ({
-  background: isDark ? '#0f172a' : '#f8fafc',
-  cardBg: isDark ? '#1e293b' : '#ffffff',
-  text: isDark ? '#f1f5f9' : '#1e293b',
-  subText: isDark ? '#94a3b8' : '#475569',
-  border: isDark ? '#334155' : '#e2e8f0',
-  glassBg: isDark ? 'rgba(30, 41, 59, 0.8)' : 'rgba(255, 255, 255, 0.8)',
-  tagBg: isDark ? '#334155' : '#f1f5f9',
+  background: isDark ? '#0a0a0a' : '#f5f5f7',
+  cardBg: isDark ? '#141414' : '#ffffff',
+  text: isDark ? '#ededed' : '#111111',
+  subText: isDark ? '#9e9e9e' : '#5a5a5a',
+  border: isDark ? '#2a2a2a' : '#e8e8e8',
+  glassBg: isDark ? 'rgba(20,20,20,0.92)' : 'rgba(255,255,255,0.95)',
+  tagBg: isDark ? '#2a2a2a' : '#f0f0f0',
+  cardShadow: isDark ? '#00000060' : '#00000008',
+  accent: '#3b3b3b',
+  accentLight: '#6b6b6b',
 });
 
-// ------------------------- Typing Animation (no theme needed inside) -------------------------
-const TypingAnimation = ({ text, speed = 100, textColor }) => {
-  const [displayText, setDisplayText] = useState('');
-  const [index, setIndex] = useState(0);
-
-  useEffect(() => {
-    if (index < text.length) {
-      const timer = setTimeout(() => {
-        setDisplayText(prev => prev + text[index]);
-        setIndex(prev => prev + 1);
-      }, speed);
-      return () => clearTimeout(timer);
-    }
-  }, [index, text, speed]);
-
-  return <Text style={[styles.typingText, { color: textColor }]}>{displayText}</Text>;
-};
-
-// ------------------------- Header -------------------------
-const Header = ({ isDark, toggleTheme, navItems, scrollToSection }) => {
+// ------------------------- Reusable Components -------------------------
+const SectionTitle = ({ title, isDark }) => {
   const colors = getColors(isDark);
   return (
-    <View style={[styles.header, Platform.OS === 'web' && styles.headerWeb, { backgroundColor: colors.glassBg, borderBottomColor: colors.border }]}>
-      <Text style={[styles.logo, { color: colors.text }]}>Ubaid.</Text>
-      <View style={styles.navLinks}>
-        {navItems.map((item) => (
-          <Pressable key={item.label} onPress={() => scrollToSection(item.ref)}>
-            <Text style={[styles.navLink, { color: colors.text }]}>{item.label}</Text>
-          </Pressable>
-        ))}
-      </View>
-      <Pressable onPress={toggleTheme} style={styles.themeToggle}>
-        <Ionicons name={isDark ? 'sunny' : 'moon'} size={24} color={colors.text} />
-      </Pressable>
+    <View style={styles.sectionHeader}>
+      <Text style={[styles.sectionTitle, { color: colors.text }]}>{title}</Text>
+      <View style={[styles.sectionUnderline, { backgroundColor: colors.accent }]} />
     </View>
   );
 };
 
-// ------------------------- Hero Section -------------------------
+// Card wrapper for consistent appearance
+const CardWrapper = ({ children, isDark, style }) => {
+  const colors = getColors(isDark);
+  return (
+    <View style={[styles.card, { backgroundColor: colors.cardBg, shadowColor: colors.cardShadow }, style]}>
+      {children}
+    </View>
+  );
+};
+
+const ServiceCard = ({ icon, title, desc, isDark }) => {
+  const colors = getColors(isDark);
+  return (
+    <Pressable style={({ hovered }) => [styles.serviceCardInner, { backgroundColor: colors.cardBg }, hovered && styles.cardHover]}>
+      <View style={[styles.serviceIcon, { backgroundColor: colors.tagBg }]}>
+        <Ionicons name={icon} size={28} color={colors.accent} />
+      </View>
+      <Text style={[styles.serviceTitle, { color: colors.text }]}>{title}</Text>
+      <Text style={[styles.serviceDesc, { color: colors.subText }]}>{desc}</Text>
+    </Pressable>
+  );
+};
+
+const ProjectCard = ({ project, isDark, onPress }) => {
+  const colors = getColors(isDark);
+  return (
+    <Pressable style={({ hovered }) => [styles.projectCardInner, { backgroundColor: colors.cardBg }, hovered && styles.projectCardHover]} onPress={onPress}>
+      <View style={[styles.projectImagePlaceholder, { backgroundColor: colors.tagBg }]}>
+        <Ionicons name={project.icon} size={36} color={colors.accent} />
+      </View>
+      <View style={styles.projectContent}>
+        <Text style={[styles.projectTitle, { color: colors.text }]}>{project.title}</Text>
+        <Text style={[styles.projectCategory, { color: colors.subText }]}>{project.category}</Text>
+        <Text style={[styles.viewBtn, { color: colors.accent }]}>View Project →</Text>
+      </View>
+    </Pressable>
+  );
+};
+
+const TestimonialCard = ({ testimonial, isDark }) => {
+  const colors = getColors(isDark);
+  return (
+    <View style={[styles.testimonialCardInner, { backgroundColor: colors.cardBg, shadowColor: colors.cardShadow }]}>
+      <View style={styles.testimonialAvatar}>
+        <Ionicons name="person-circle" size={56} color={colors.accentLight} />
+      </View>
+      <Text style={[styles.testimonialText, { color: colors.subText }]}>“{testimonial.feedback}”</Text>
+      <Text style={[styles.testimonialName, { color: colors.text }]}>{testimonial.name}</Text>
+      <Text style={[styles.testimonialRole, { color: colors.subText }]}>{testimonial.role}</Text>
+    </View>
+  );
+};
+
+// ------------------------- Header -------------------------
+const Header = ({ isDark, toggleTheme, scrollToSection }) => {
+  const colors = getColors(isDark);
+  const [mobileMenu, setMobileMenu] = useState(false);
+  const navItems = ['Home', 'About', 'Services', 'Portfolio', 'Contact'];
+
+  return (
+    <View style={[styles.header, isWeb && styles.headerWeb, { backgroundColor: colors.glassBg, borderBottomColor: colors.border }]}>
+      <Pressable onPress={() => scrollToSection('home')}>
+        <Text style={[styles.logo, { color: colors.text }]}>Ubaid.</Text>
+      </Pressable>
+      <View style={[styles.navLinks, (!isWeb && !mobileMenu) && { display: 'none' }]}>
+        {navItems.map((item) => (
+          <Pressable key={item} onPress={() => { scrollToSection(item.toLowerCase()); if (!isWeb) setMobileMenu(false); }}>
+            <Text style={[styles.navLink, { color: colors.subText }]}>{item}</Text>
+          </Pressable>
+        ))}
+      </View>
+      <View style={styles.headerActions}>
+        <Pressable style={styles.hireMeBtn}>
+          <LinearGradient colors={[colors.accent, '#222']} style={styles.hireBtnGrad}>
+            <Text style={styles.hireBtnText}>Hire Me</Text>
+          </LinearGradient>
+        </Pressable>
+        <Pressable onPress={toggleTheme} style={styles.themeToggle}>
+          <Ionicons name={isDark ? 'sunny' : 'moon'} size={20} color={colors.text} />
+        </Pressable>
+        {!isWeb && (
+          <Pressable onPress={() => setMobileMenu(!mobileMenu)}>
+            <Ionicons name={mobileMenu ? 'close' : 'menu'} size={24} color={colors.text} />
+          </Pressable>
+        )}
+      </View>
+    </View>
+  );
+};
+
+// ------------------------- Hero Section (no card) -------------------------
 const HeroSection = ({ isDark }) => {
   const colors = getColors(isDark);
   return (
     <View style={styles.heroContainer}>
       <View style={styles.heroLeft}>
-        <View style={[styles.badge, { backgroundColor: colors.tagBg }]}><Text style={[styles.badgeText, { color: colors.text }]}>✨ Open to opportunities</Text></View>
-        <Text style={[styles.heading, { color: colors.text }]}>Hi, I'm <Text style={styles.gradientText}>Ubaid Shekh</Text></Text>
-        <TypingAnimation text="Mobile App Creator" textColor={colors.text} />
-        <Text style={[styles.description, { color: colors.subText }]}>Crafting seamless mobile experiences with React Native & Expo. 4+ years transforming ideas into high-performance apps.</Text>
-        <View style={styles.buttonGroup}>
-          <Pressable style={styles.gradientBtn}>
-            <LinearGradient colors={['#8b5cf6', '#3b82f6']} style={styles.gradientBackground}>
-              <Text style={styles.btnText}>View Work</Text>
+        <Text style={[styles.heroIntro, { color: colors.accent }]}>HELLO, I'M UBAID</Text>
+        <Text style={[styles.heroTitle, { color: colors.text }]}>
+          Mobile App Developer &<Text style={styles.gradientText}> UI/UX Designer</Text>
+        </Text>
+        <Text style={[styles.heroDesc, { color: colors.subText }]}>
+          Crafting high-performance mobile apps with React Native and modern UI/UX. 
+          4+ years of turning ideas into delightful digital experiences.
+        </Text>
+        <View style={styles.heroButtons}>
+          <Pressable style={styles.downloadBtn}>
+            <LinearGradient colors={[colors.accent, '#222']} style={styles.gradientBtn}>
+              <Text style={styles.btnText}>Download CV</Text>
             </LinearGradient>
           </Pressable>
-          <Pressable style={styles.outlineBtn}><Text style={styles.outlineText}>Hire Me</Text></Pressable>
+          <Pressable style={[styles.hireOutlineBtn, { borderColor: colors.accent }]}>
+            <Text style={[styles.outlineText, { color: colors.accent }]}>Hire Me</Text>
+          </Pressable>
         </View>
       </View>
       <View style={styles.heroRight}>
-        <View style={[styles.profileCard, { backgroundColor: colors.cardBg, shadowColor: '#000' }]}>
-          <Ionicons name="person-circle" size={80} color="#8b5cf6" />
-          <View style={[styles.statusBadge, { backgroundColor: colors.tagBg }]}><View style={styles.greenDot} /><Text style={[styles.statusText, { color: colors.text }]}>Available for work</Text></View>
-          <Text style={[styles.name, { color: colors.text }]}>Ubaid Shekh</Text>
-          <Text style={[styles.role, { color: colors.subText }]}>Mobile App Creator</Text>
-          <View style={styles.infoRow}><Ionicons name="location" size={16} color={colors.subText} /><Text style={[styles.infoText, { color: colors.subText }]}>New Delhi, India</Text></View>
-          <View style={styles.infoRow}><Ionicons name="school" size={16} color={colors.subText} /><Text style={[styles.infoText, { color: colors.subText }]}>Jamia Millia Islamia</Text></View>
+        <View style={styles.profileWrapper}>
+          <View style={[styles.profileBorder, { borderColor: colors.border }]}>
+            <Image source={require('../../assets/images/profile.png')} style={styles.profileImage} />
+          </View>
+          <View style={[styles.floatingShape, styles.shape1, { backgroundColor: colors.accent, opacity: 0.08 }]} />
+          <View style={[styles.floatingShape, styles.shape2, { backgroundColor: colors.accent, opacity: 0.08 }]} />
+          <View style={[styles.floatingShape, styles.shape3, { backgroundColor: colors.accentLight, opacity: 0.05 }]} />
         </View>
       </View>
     </View>
   );
 };
 
-// ------------------------- About Section -------------------------
+// ------------------------- About Section (Card) -------------------------
 const AboutSection = ({ isDark }) => {
   const colors = getColors(isDark);
-  const stats = [
-    { value: '15+', label: 'Projects' },
-    { value: '3+', label: 'Years Coding' },
-    { value: '10+', label: 'Technologies' },
-    { value: '∞', label: 'Cups of Chai' },
-  ];
   return (
-    <View style={styles.aboutContainer}>
-      <Text style={[styles.sectionTitle, { color: colors.text }]}>About Me</Text>
-      <Text style={[styles.description, { color: colors.subText }]}>I'm a passionate mobile developer specializing in React Native and cross-platform solutions. With a strong foundation in IoT and full-stack development, I build apps that are both functional and beautiful. Currently exploring AI integrations and cloud architectures.</Text>
-      <View style={styles.statsRow}>
-        {stats.map((stat, i) => (
-          <View key={i} style={styles.statItem}><Text style={[styles.statValue, { color: colors.text }]}>{stat.value}</Text><Text style={[styles.statLabel, { color: colors.subText }]}>{stat.label}</Text></View>
-        ))}
+    <CardWrapper isDark={isDark} style={styles.cardContainer}>
+      <View style={styles.aboutGrid}>
+        <View style={styles.aboutLeft}>
+          <Image source={require('../../assets/images/profile.png')} style={[styles.aboutImage, { borderColor: colors.border }]} />
+        </View>
+        <View style={styles.aboutRight}>
+          <SectionTitle title="About Me" isDark={isDark} />
+          <Text style={[styles.aboutText, { color: colors.subText }]}>
+            I'm a passionate mobile developer and UI/UX designer based in New Delhi. 
+            I love creating seamless, user-centric apps that solve real problems.
+          </Text>
+          <View style={styles.statsRow}>
+            <View style={styles.statItem}>
+              <Text style={[styles.statValue, { color: colors.text }]}>15+</Text>
+              <Text style={[styles.statLabel, { color: colors.subText }]}>Projects</Text>
+            </View>
+            <View style={styles.statItem}>
+              <Text style={[styles.statValue, { color: colors.text }]}>3+</Text>
+              <Text style={[styles.statLabel, { color: colors.subText }]}>Years</Text>
+            </View>
+            <View style={styles.statItem}>
+              <Text style={[styles.statValue, { color: colors.text }]}>10+</Text>
+              <Text style={[styles.statLabel, { color: colors.subText }]}>Technologies</Text>
+            </View>
+          </View>
+        </View>
       </View>
-    </View>
+    </CardWrapper>
   );
 };
 
-// ------------------------- Skills Section -------------------------
+// ------------------------- Services Section (Card) -------------------------
+const ServicesSection = ({ isDark }) => {
+  const services = [
+    { icon: 'phone-portrait', title: 'Mobile App Dev', desc: 'React Native, Flutter, iOS/Android.' },
+    { icon: 'hardware-chip', title: 'IoT Solutions', desc: 'ESP8266, sensors, real-time dashboards.' },
+    { icon: 'code-slash', title: 'Web Development', desc: 'React, Node.js, full-stack apps.' },
+    { icon: 'brush', title: 'UI/UX Design', desc: 'Figma, prototyping, user-centered design.' },
+  ];
+  return (
+    <CardWrapper isDark={isDark} style={styles.cardContainer}>
+      <SectionTitle title="What I Do" isDark={isDark} />
+      <View style={styles.servicesGrid}>
+        {services.map((s, i) => <ServiceCard key={i} icon={s.icon} title={s.title} desc={s.desc} isDark={isDark} />)}
+      </View>
+    </CardWrapper>
+  );
+};
+
+// ------------------------- Skills Section (Card) -------------------------
 const SkillsSection = ({ isDark }) => {
   const colors = getColors(isDark);
-  const skills = ['React Native', 'Flutter', 'Node.js', 'Firebase', 'MongoDB', 'TypeScript', 'Arduino ESP8266', 'IoT Protocols', 'REST API', 'UI/UX', 'Git'];
+  const skills = ['React Native', 'Node.js', 'Firebase', 'MongoDB', 'TypeScript', 'Arduino ESP8266', 'IoT Protocols', 'REST API', 'Git'];
   return (
-    <View style={styles.skillsContainer}>
-      <Text style={[styles.sectionTitle, { color: colors.text }]}>Skills & Tech Stack</Text>
+    <CardWrapper isDark={isDark} style={styles.cardContainer}>
+      <SectionTitle title="Tech Stack" isDark={isDark} />
       <View style={styles.tagsWrapper}>
         {skills.map((skill, i) => (
-          <View key={i} style={[styles.tag, { backgroundColor: colors.tagBg, shadowColor: '#000' }]}><Text style={[styles.tagText, { color: colors.text }]}>{skill}</Text></View>
+          <View key={i} style={[styles.tag, { backgroundColor: colors.tagBg }]}>
+            <Text style={[styles.tagText, { color: colors.text }]}>{skill}</Text>
+          </View>
         ))}
       </View>
-    </View>
+    </CardWrapper>
   );
 };
 
-// ------------------------- Projects Section -------------------------
-const ProjectsSection = ({ isDark }) => {
-  const colors = getColors(isDark);
+// ------------------------- Portfolio Section (Card) -------------------------
+const PortfolioSection = ({ isDark }) => {
+  const [filter, setFilter] = useState('All');
   const projects = [
-    { title: 'Smart Home Automation', description: 'IoT-based control system for lights, fans, and security.', tech: ['ESP8266', 'React Native', 'MQTT'], icon: 'home', gradient: ['#4f46e5', '#7c3aed'] },
-    { title: 'Laundry Service Platform', description: 'On-demand laundry booking with real-time tracking.', tech: ['Node.js', 'MongoDB', 'Expo'], icon: 'shirt', gradient: ['#ec4899', '#f43f5e'] },
-    { title: 'Muslim Community Platform', description: 'Prayer times, Qibla, and event management.', tech: ['Firebase', 'React Native', 'API'], icon: 'mosque', gradient: ['#10b981', '#14b8a6'] },
+    { id: '1', title: 'Smart Home Automation', category: 'IoT', icon: 'home' },
+    { id: '2', title: 'Laundry Service Platform', category: 'App', icon: 'shirt' },
+    { id: '3', title: 'Muslim Community App', category: 'App', icon: 'people' },
+    { id: '4', title: 'E‑commerce Dashboard', category: 'Web', icon: 'cart' },
   ];
+  const filtered = filter === 'All' ? projects : projects.filter(p => p.category === filter);
+  const filters = ['All', 'App', 'IoT', 'Web'];
+
   return (
-    <View style={styles.projectsContainer}>
-      <Text style={[styles.sectionTitle, { color: colors.text }]}>Featured Projects</Text>
-      <View style={styles.projectGrid}>
-        {projects.map((project, i) => (
-          <Pressable key={i} style={({ hovered }) => [styles.projectCard, { backgroundColor: colors.cardBg, shadowColor: '#000' }, hovered && styles.projectCardHover]}>
-            <LinearGradient colors={project.gradient} style={styles.projectImage}><Ionicons name={project.icon} size={48} color="white" /></LinearGradient>
-            <View style={styles.projectContent}><Text style={[styles.projectTitle, { color: colors.text }]}>{project.title}</Text><Text style={[styles.projectDesc, { color: colors.subText }]}>{project.description}</Text><View style={styles.techTags}>{project.tech.map((t, j) => <Text key={j} style={[styles.techText, { backgroundColor: colors.tagBg, color: colors.text }]}>{t}</Text>)}</View></View>
+    <CardWrapper isDark={isDark} style={styles.cardContainer}>
+      <SectionTitle title="Portfolio" isDark={isDark} />
+      <View style={styles.filterRow}>
+        {filters.map(f => (
+          <Pressable key={f} onPress={() => setFilter(f)} style={[styles.filterBtn, filter === f && styles.activeFilter]}>
+            <Text style={[styles.filterText, { color: getColors(isDark).subText }, filter === f && styles.activeFilterText]}>{f}</Text>
           </Pressable>
         ))}
       </View>
-    </View>
+      <View style={styles.portfolioGrid}>
+        {filtered.map(project => <ProjectCard key={project.id} project={project} isDark={isDark} onPress={() => Alert.alert('Project', project.title)} />)}
+      </View>
+    </CardWrapper>
   );
 };
 
-// ------------------------- App Screenshots -------------------------
-const AppScreenshots = ({ isDark }) => {
+// ------------------------- App Showcase (Card) -------------------------
+const AppShowcase = ({ isDark }) => {
   const colors = getColors(isDark);
-  const apps = [
-    { name: 'FitTrack', gradient: ['#06b6d4', '#3b82f6'] },
-    { name: 'Home IoT', gradient: ['#8b5cf6', '#d946ef'] },
-    { name: 'Laundry', gradient: ['#f97316', '#ef4444'] },
-    { name: 'Community', gradient: ['#10b981', '#14b8a6'] },
+  const apps = ['FitTrack', 'Home IoT', 'Laundry', 'Community'];
+  return (
+    <CardWrapper isDark={isDark} style={styles.cardContainer}>
+      <SectionTitle title="App Showcase" isDark={isDark} />
+      <FlatList
+        horizontal
+        showsHorizontalScrollIndicator={false}
+        contentContainerStyle={styles.showcaseScroll}
+        data={apps}
+        renderItem={({ item }) => (
+          <View style={[styles.showcaseCard, { backgroundColor: colors.cardBg, shadowColor: colors.cardShadow }]}>
+            <Text style={[styles.showcaseTitle, { color: colors.text }]}>{item}</Text>
+          </View>
+        )}
+        keyExtractor={(item, i) => i.toString()}
+      />
+    </CardWrapper>
+  );
+};
+
+// ------------------------- Video Demo Section (Card) -------------------------
+const VideoDemo = ({ isDark }) => {
+  const video = useRef(null);
+  const colors = getColors(isDark);
+  return (
+    <CardWrapper isDark={isDark} style={styles.cardContainer}>
+      <SectionTitle title="Project Demo" isDark={isDark} />
+      <View style={[styles.videoWrapper, { backgroundColor: colors.cardBg, shadowColor: colors.cardShadow }]}>
+        <Video
+          ref={video}
+          source={{ uri: 'https://www.w3schools.com/html/mov_bbb.mp4' }}
+          rate={1.0}
+          volume={1.0}
+          isMuted={false}
+          resizeMode="cover"
+          shouldPlay
+          useNativeControls
+          style={styles.video}
+        />
+      </View>
+    </CardWrapper>
+  );
+};
+
+// ------------------------- Testimonials (Card) -------------------------
+const Testimonials = ({ isDark }) => {
+  const testimonials = [
+    { id: '1', name: 'Amit Sharma', role: 'CEO, TechStart', feedback: 'Ubaid delivered an outstanding app. Very professional and creative!' },
+    { id: '2', name: 'Priya Mehta', role: 'Product Manager', feedback: 'Great communication, on time, and pixel-perfect designs.' },
   ];
   return (
-    <View style={styles.screenshotsContainer}>
-      <Text style={[styles.sectionTitle, { color: colors.text }]}>App Screenshots</Text>
-      <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.screenshotScroll}>
-        {apps.map((app, i) => (
-          <LinearGradient key={i} colors={app.gradient} style={styles.screenshotCard}><Text style={styles.screenshotTitle}>{app.name}</Text></LinearGradient>
-        ))}
-      </ScrollView>
-    </View>
+    <CardWrapper isDark={isDark} style={styles.cardContainer}>
+      <SectionTitle title="Client Feedback" isDark={isDark} />
+      <View style={styles.testimonialGrid}>
+        {testimonials.map(t => <TestimonialCard key={t.id} testimonial={t} isDark={isDark} />)}
+      </View>
+    </CardWrapper>
   );
 };
 
-// ------------------------- Showcase Box -------------------------
-const ShowcaseBox = ({ isDark }) => {
-  const colors = getColors(isDark);
-  return (
-    <View style={[styles.showcaseContainer, { backgroundColor: colors.cardBg, borderColor: colors.border }]}>
-      <Ionicons name="play-circle" size={64} color="#8b5cf6" />
-      <Text style={[styles.showcaseText, { color: colors.text }]}>Demo / Video Showcase</Text>
-      <Text style={[styles.showcaseSubtext, { color: colors.subText }]}>Coming soon — project walkthroughs & demos</Text>
-    </View>
-  );
-};
-
-// ------------------------- Contact Section -------------------------
+// ------------------------- Contact Section (Card - Fixed UI) -------------------------
 const ContactSection = ({ isDark }) => {
   const colors = getColors(isDark);
   const [form, setForm] = useState({ name: '', email: '', subject: '', message: '' });
-  const handleSend = () => { Alert.alert('Message Sent', 'Thank you for reaching out!'); setForm({ name: '', email: '', subject: '', message: '' }); };
+  const handleSend = () => { Alert.alert('Message Sent', 'Thank you! I will get back soon.'); setForm({ name: '', email: '', subject: '', message: '' }); };
   const contactInfo = [
     { icon: 'mail', label: 'Email', value: 'hello@ubaid.dev' },
     { icon: 'call', label: 'Phone', value: '+91 98765 43210' },
     { icon: 'location', label: 'Location', value: 'New Delhi, India' },
   ];
   return (
-    <View style={styles.contactContainer}>
-      <Text style={[styles.sectionTitle, { color: colors.text }]}>Let's Connect</Text>
+    <CardWrapper isDark={isDark} style={styles.cardContainer}>
+      <SectionTitle title="Let's Connect" isDark={isDark} />
       <View style={styles.contactGrid}>
         <View style={styles.contactLeft}>
           {contactInfo.map((item, i) => (
             <View key={i} style={styles.contactInfoItem}>
-              <Ionicons name={item.icon} size={24} color="#8b5cf6" />
-              <View><Text style={[styles.contactInfoLabel, { color: colors.subText }]}>{item.label}</Text><Text style={[styles.contactInfoValue, { color: colors.text }]}>{item.value}</Text></View>
+              <Ionicons name={item.icon} size={24} color={colors.accent} />
+              <View>
+                <Text style={[styles.contactInfoLabel, { color: colors.subText }]}>{item.label}</Text>
+                <Text style={[styles.contactInfoValue, { color: colors.text }]}>{item.value}</Text>
+              </View>
             </View>
           ))}
         </View>
         <View style={styles.contactRight}>
-          <TextInput style={[styles.input, { backgroundColor: colors.cardBg, borderColor: colors.border, color: colors.text }]} placeholder="Your Name" placeholderTextColor={colors.subText} value={form.name} onChangeText={t => setForm({ ...form, name: t })} />
-          <TextInput style={[styles.input, { backgroundColor: colors.cardBg, borderColor: colors.border, color: colors.text }]} placeholder="Email Address" placeholderTextColor={colors.subText} keyboardType="email-address" value={form.email} onChangeText={t => setForm({ ...form, email: t })} />
-          <TextInput style={[styles.input, { backgroundColor: colors.cardBg, borderColor: colors.border, color: colors.text }]} placeholder="Subject" placeholderTextColor={colors.subText} value={form.subject} onChangeText={t => setForm({ ...form, subject: t })} />
-          <TextInput style={[styles.input, styles.textArea, { backgroundColor: colors.cardBg, borderColor: colors.border, color: colors.text }]} placeholder="Message" placeholderTextColor={colors.subText} multiline numberOfLines={4} value={form.message} onChangeText={t => setForm({ ...form, message: t })} />
-          <Pressable onPress={handleSend} style={styles.sendBtn}><LinearGradient colors={['#8b5cf6', '#3b82f6']} style={styles.gradientBackground}><Text style={styles.sendText}>Send Message</Text></LinearGradient></Pressable>
+          <TextInput
+            style={[styles.input, { backgroundColor: colors.cardBg, borderColor: colors.border, color: colors.text }]}
+            placeholder="Your Name" placeholderTextColor={colors.subText}
+            value={form.name} onChangeText={t => setForm({ ...form, name: t })}
+          />
+          <TextInput
+            style={[styles.input, { backgroundColor: colors.cardBg, borderColor: colors.border, color: colors.text }]}
+            placeholder="Email Address" placeholderTextColor={colors.subText}
+            keyboardType="email-address" value={form.email} onChangeText={t => setForm({ ...form, email: t })}
+          />
+          <TextInput
+            style={[styles.input, { backgroundColor: colors.cardBg, borderColor: colors.border, color: colors.text }]}
+            placeholder="Subject" placeholderTextColor={colors.subText}
+            value={form.subject} onChangeText={t => setForm({ ...form, subject: t })}
+          />
+          <TextInput
+            style={[styles.input, styles.textArea, { backgroundColor: colors.cardBg, borderColor: colors.border, color: colors.text }]}
+            placeholder="Message" placeholderTextColor={colors.subText}
+            multiline numberOfLines={4} value={form.message} onChangeText={t => setForm({ ...form, message: t })}
+          />
+          <Pressable onPress={handleSend} style={styles.sendBtn}>
+            <LinearGradient colors={[colors.accent, '#222']} style={styles.gradientBtn}>
+              <Text style={styles.sendText}>Send Message</Text>
+            </LinearGradient>
+          </Pressable>
         </View>
       </View>
-    </View>
+    </CardWrapper>
   );
 };
 
 // ------------------------- Footer -------------------------
 const Footer = ({ isDark }) => {
   const colors = getColors(isDark);
-  return <View style={[styles.footer, { borderTopColor: colors.border }]}><Text style={[styles.footerText, { color: colors.subText }]}>© 2026 Ubaid Shekh — Built with ❤️ using web & mobile</Text></View>;
+  return (
+    <View style={[styles.footer, { borderTopColor: colors.border, backgroundColor: colors.cardBg }]}>
+      <View style={styles.footerColumns}>
+        <View>
+          <Text style={[styles.footerTitle, { color: colors.text }]}>Ubaid.</Text>
+          <Text style={[styles.footerText, { color: colors.subText }]}>Mobile App Developer</Text>
+        </View>
+        <View>
+          <Text style={[styles.footerTitle, { color: colors.text }]}>Links</Text>
+          <Text style={[styles.footerText, { color: colors.subText }]}>About</Text>
+          <Text style={[styles.footerText, { color: colors.subText }]}>Portfolio</Text>
+          <Text style={[styles.footerText, { color: colors.subText }]}>Contact</Text>
+        </View>
+        <View>
+          <Text style={[styles.footerTitle, { color: colors.text }]}>Resources</Text>
+          <Text style={[styles.footerText, { color: colors.subText }]}>Blog</Text>
+          <Text style={[styles.footerText, { color: colors.subText }]}>GitHub</Text>
+        </View>
+        <View>
+          <Text style={[styles.footerTitle, { color: colors.text }]}>Social</Text>
+          <View style={styles.socialIcons}>
+            <Ionicons name="logo-github" size={20} color={colors.text} />
+            <Ionicons name="logo-linkedin" size={20} color={colors.text} />
+            <Ionicons name="logo-twitter" size={20} color={colors.text} />
+          </View>
+        </View>
+      </View>
+      <Text style={[styles.copyright, { color: colors.subText }]}>© 2026 Ubaid Shekh — Built with ❤️ using web & mobile</Text>
+    </View>
+  );
 };
 
 // ------------------------- Main App -------------------------
@@ -227,127 +424,165 @@ export default function App() {
   const systemScheme = useColorScheme();
   const [isDark, setIsDark] = useState(systemScheme === 'dark');
   const toggleTheme = () => setIsDark(prev => !prev);
+  const colors = getColors(isDark);
 
-  const homeRef = useRef(null);
-  const aboutRef = useRef(null);
-  const skillsRef = useRef(null);
-  const projectsRef = useRef(null);
-  const showcaseRef = useRef(null);
-  const contactRef = useRef(null);
-
-  const navItems = [
-    { label: 'Home', ref: homeRef },
-    { label: 'About', ref: aboutRef },
-    { label: 'Skills', ref: skillsRef },
-    { label: 'Projects', ref: projectsRef },
-    { label: 'Showcase', ref: showcaseRef },
-    { label: 'Contact', ref: contactRef },
-  ];
-
-  const scrollToSection = (ref) => {
-    if (Platform.OS === 'web' && ref.current) {
-      ref.current.scrollIntoView({ behavior: 'smooth', block: 'start' });
+  const sectionRefs = {
+    home: useRef(null), about: useRef(null), services: useRef(null), portfolio: useRef(null), contact: useRef(null)
+  };
+  const scrollToSection = (section) => {
+    if (isWeb && sectionRefs[section]?.current) {
+      sectionRefs[section].current.scrollIntoView({ behavior: 'smooth', block: 'start' });
     }
   };
-
-  const colors = getColors(isDark);
 
   return (
     <>
       <StatusBar style={isDark ? 'light' : 'dark'} />
-      <Header isDark={isDark} toggleTheme={toggleTheme} navItems={navItems} scrollToSection={scrollToSection} />
-      <ScrollView style={[styles.mainContainer, { backgroundColor: colors.background }]}>
-        <View ref={homeRef}><HeroSection isDark={isDark} /></View>
-        <View ref={aboutRef}><AboutSection isDark={isDark} /></View>
-        <View ref={skillsRef}><SkillsSection isDark={isDark} /></View>
-        <View ref={projectsRef}><ProjectsSection isDark={isDark} /></View>
-        <AppScreenshots isDark={isDark} />
-        <View ref={showcaseRef}><ShowcaseBox isDark={isDark} /></View>
-        <View ref={contactRef}><ContactSection isDark={isDark} /></View>
+      <Header isDark={isDark} toggleTheme={toggleTheme} scrollToSection={scrollToSection} />
+      <ScrollView style={[styles.main, { backgroundColor: colors.background }]} showsVerticalScrollIndicator={false}>
+        <View ref={sectionRefs.home}><HeroSection isDark={isDark} /></View>
+        <View ref={sectionRefs.about}><AboutSection isDark={isDark} /></View>
+        <View ref={sectionRefs.services}><ServicesSection isDark={isDark} /></View>
+        <SkillsSection isDark={isDark} />
+        <View ref={sectionRefs.portfolio}><PortfolioSection isDark={isDark} /></View>
+        <AppShowcase isDark={isDark} />
+        <VideoDemo isDark={isDark} />
+        <Testimonials isDark={isDark} />
+        <View ref={sectionRefs.contact}><ContactSection isDark={isDark} /></View>
         <Footer isDark={isDark} />
       </ScrollView>
     </>
   );
 }
 
-// ------------------------- Styles (static, colors applied inline) -------------------------
+// ------------------------- Styles (Card-based layout) -------------------------
 const styles = StyleSheet.create({
-  mainContainer: { flex: 1 },
+  main: { flex: 1 },
   // Header
-  header: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', paddingHorizontal: 24, paddingVertical: 16, borderBottomWidth: 1, ...Platform.select({ web: { backdropFilter: 'blur(10px)', position: 'sticky', top: 0, zIndex: 100 } }) },
-  logo: { fontSize: 24, fontWeight: 'bold' },
-  navLinks: { flexDirection: 'row', gap: 24, flexWrap: 'wrap', justifyContent: 'center' },
-  navLink: { fontSize: 16, fontWeight: '500', opacity: 0.8 },
+  header: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    paddingHorizontal: isWeb ? 48 : 20,
+    paddingVertical: isWeb ? 20 : 16,
+    borderBottomWidth: 1,
+  },
+  headerWeb: { position: 'sticky', top: 0, zIndex: 100, backdropFilter: 'blur(16px)' },
+  logo: { fontSize: 26, fontWeight: '700', letterSpacing: -0.5 },
+  navLinks: { flexDirection: 'row', gap: 40 },
+  navLink: { fontSize: 15, fontWeight: '500', letterSpacing: 0.3 },
+  headerActions: { flexDirection: 'row', alignItems: 'center', gap: 20 },
+  hireMeBtn: { borderRadius: 40, overflow: 'hidden' },
+  hireBtnGrad: { paddingHorizontal: 22, paddingVertical: 11 },
+  hireBtnText: { color: 'white', fontWeight: '600', fontSize: 14 },
   themeToggle: { padding: 8 },
+  // Card wrapper
+  card: {
+    marginHorizontal: isWeb ? 40 : 20,
+    marginVertical: 24,
+    padding: isWeb ? 48 : 28,
+    borderRadius: 40,
+    shadowOffset: { width: 0, height: 12 },
+    shadowOpacity: 0.08,
+    shadowRadius: 24,
+    elevation: 8,
+  },
   // Hero
-  heroContainer: { flexDirection: Platform.OS === 'web' ? 'row' : 'column', padding: 24, gap: 40, maxWidth: 1200, alignSelf: 'center', width: '100%' },
-  heroLeft: { flex: 1, gap: 20 },
+  heroContainer: {
+    flexDirection: isWeb ? 'row' : 'column',
+    padding: isWeb ? 64 : 32,
+    gap: 48,
+    maxWidth: 1280,
+    alignSelf: 'center',
+    alignItems: 'center',
+  },
+  heroLeft: { flex: 1, gap: 24 },
   heroRight: { flex: 1, alignItems: 'center' },
-  badge: { paddingHorizontal: 12, paddingVertical: 6, borderRadius: 40, alignSelf: 'flex-start' },
-  badgeText: { fontSize: 14 },
-  heading: { fontSize: 48, fontWeight: 'bold' },
-  gradientText: { backgroundImage: 'linear-gradient(135deg, #8b5cf6, #3b82f6)', WebkitBackgroundClip: 'text', color: 'transparent' },
-  typingText: { fontSize: 24, fontWeight: '600', marginVertical: 8 },
-  description: { fontSize: 16, lineHeight: 24 },
-  buttonGroup: { flexDirection: 'row', gap: 16, marginTop: 8 },
-  gradientBtn: { borderRadius: 40, overflow: 'hidden' },
-  gradientBackground: { paddingHorizontal: 28, paddingVertical: 12, alignItems: 'center' },
+  heroIntro: { fontSize: 14, letterSpacing: 3, fontWeight: '600' },
+  heroTitle: { fontSize: 52, fontWeight: '700', lineHeight: 62, letterSpacing: -1 },
+  gradientText: { backgroundImage: 'linear-gradient(135deg, #4a4a4a, #8a8a8a)', WebkitBackgroundClip: 'text', color: 'transparent' },
+  heroDesc: { fontSize: 17, lineHeight: 28, opacity: 0.85 },
+  heroButtons: { flexDirection: 'row', gap: 24, marginTop: 8 },
+  downloadBtn: { borderRadius: 50, overflow: 'hidden' },
+  gradientBtn: { paddingHorizontal: 36, paddingVertical: 15, alignItems: 'center' },
   btnText: { color: 'white', fontWeight: '600', fontSize: 16 },
-  outlineBtn: { borderWidth: 1, borderColor: '#8b5cf6', borderRadius: 40, paddingHorizontal: 28, paddingVertical: 12 },
-  outlineText: { color: '#8b5cf6', fontWeight: '600' },
-  profileCard: { borderRadius: 32, padding: 24, alignItems: 'center', gap: 12, shadowOffset: { width: 0, height: 10 }, shadowOpacity: 0.1, shadowRadius: 20, elevation: 10, width: '100%', maxWidth: 320 },
-  statusBadge: { flexDirection: 'row', alignItems: 'center', gap: 8, paddingHorizontal: 12, paddingVertical: 6, borderRadius: 40 },
-  greenDot: { width: 8, height: 8, borderRadius: 4, backgroundColor: '#10b981' },
-  statusText: { fontSize: 12 },
-  name: { fontSize: 20, fontWeight: 'bold' },
-  role: { fontSize: 14 },
-  infoRow: { flexDirection: 'row', alignItems: 'center', gap: 8 },
-  infoText: { fontSize: 14 },
-  // About
-  aboutContainer: { padding: 40, alignItems: 'center', gap: 20, maxWidth: 800, alignSelf: 'center' },
-  sectionTitle: { fontSize: 36, fontWeight: 'bold', marginBottom: 16 },
-  statsRow: { flexDirection: 'row', flexWrap: 'wrap', justifyContent: 'space-around', gap: 20, marginTop: 20, width: '100%' },
-  statItem: { alignItems: 'center', flex: 1 },
-  statValue: { fontSize: 28, fontWeight: 'bold' },
-  statLabel: { fontSize: 14, marginTop: 4 },
+  hireOutlineBtn: { borderWidth: 1.5, borderRadius: 50, paddingHorizontal: 36, paddingVertical: 15 },
+  outlineText: { fontWeight: '600', fontSize: 16 },
+  profileWrapper: { width: 280, height: 280, position: 'relative' },
+  profileBorder: { width: '100%', height: '100%', borderRadius: 140, borderWidth: 2, padding: 5 },
+  profileImage: { width: '100%', height: '100%', borderRadius: 140 },
+  floatingShape: { position: 'absolute', width: 80, height: 80, borderRadius: 40 },
+  shape1: { top: -30, right: -30 },
+  shape2: { bottom: -30, left: -30 },
+  shape3: { top: '30%', left: -20, width: 50, height: 50 },
+  // About (inside card)
+  aboutGrid: { flexDirection: isWeb ? 'row' : 'column', gap: 48 },
+  aboutLeft: { flex: 1, alignItems: 'center' },
+  aboutImage: { width: 220, height: 220, borderRadius: 28, borderWidth: 1 },
+  aboutRight: { flex: 1 },
+  aboutText: { fontSize: 17, lineHeight: 28, marginVertical: 20 },
+  statsRow: { flexDirection: 'row', justifyContent: 'space-between', marginTop: 20 },
+  statItem: { alignItems: 'center' },
+  statValue: { fontSize: 36, fontWeight: '700' },
+  statLabel: { fontSize: 14, marginTop: 8 },
+  // Services
+  servicesGrid: { flexDirection: isWeb ? 'row' : 'column', flexWrap: 'wrap', justifyContent: 'center', gap: 32 },
+  serviceCardInner: { width: 260, borderRadius: 28, padding: 28, alignItems: 'center', gap: 18, shadowOffset: { width: 0, height: 8 }, shadowOpacity: 0.06, shadowRadius: 16, elevation: 4 },
+  cardHover: { transform: [{ scale: 1.02 }], shadowOpacity: 0.12 },
+  serviceIcon: { padding: 16, borderRadius: 60 },
+  serviceTitle: { fontSize: 20, fontWeight: '700', textAlign: 'center' },
+  serviceDesc: { fontSize: 14, textAlign: 'center', lineHeight: 22 },
   // Skills
-  skillsContainer: { padding: 40, alignItems: 'center', gap: 24 },
-  tagsWrapper: { flexDirection: 'row', flexWrap: 'wrap', justifyContent: 'center', gap: 12, maxWidth: 900 },
-  tag: { paddingHorizontal: 20, paddingVertical: 10, borderRadius: 40, shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.05, shadowRadius: 4, elevation: 2 },
+  tagsWrapper: { flexDirection: 'row', flexWrap: 'wrap', justifyContent: 'center', gap: 12 },
+  tag: { paddingHorizontal: 22, paddingVertical: 12, borderRadius: 50 },
   tagText: { fontSize: 14, fontWeight: '500' },
-  // Projects
-  projectsContainer: { padding: 40, alignItems: 'center', gap: 32 },
-  projectGrid: { flexDirection: Platform.OS === 'web' ? 'row' : 'column', flexWrap: 'wrap', justifyContent: 'center', gap: 24, maxWidth: 1100 },
-  projectCard: { borderRadius: 24, overflow: 'hidden', width: 300, shadowOffset: { width: 0, height: 8 }, shadowOpacity: 0.1, shadowRadius: 12, elevation: 5, transition: 'all 0.2s' },
-  projectCardHover: { transform: [{ scale: 1.02 }], shadowOpacity: 0.2 },
-  projectImage: { height: 160, justifyContent: 'center', alignItems: 'center' },
-  projectContent: { padding: 20, gap: 8 },
-  projectTitle: { fontSize: 20, fontWeight: 'bold' },
-  projectDesc: { fontSize: 14 },
-  techTags: { flexDirection: 'row', flexWrap: 'wrap', gap: 8, marginTop: 8 },
-  techText: { paddingHorizontal: 12, paddingVertical: 4, borderRadius: 20, fontSize: 12 },
-  // Screenshots
-  screenshotsContainer: { paddingVertical: 40, gap: 24, alignItems: 'center' },
-  screenshotScroll: { paddingHorizontal: 20, gap: 20 },
-  screenshotCard: { width: 200, height: 280, borderRadius: 32, justifyContent: 'center', alignItems: 'center', shadowOffset: { width: 0, height: 8 }, shadowOpacity: 0.15, shadowRadius: 12, elevation: 8 },
-  screenshotTitle: { fontSize: 24, fontWeight: 'bold', color: 'white' },
+  // Portfolio
+  filterRow: { flexDirection: 'row', gap: 16, marginBottom: 40, flexWrap: 'wrap', justifyContent: 'center' },
+  filterBtn: { paddingHorizontal: 20, paddingVertical: 9, borderRadius: 40 },
+  activeFilter: { backgroundColor: '#eaeaea' },
+  filterText: { fontSize: 14, fontWeight: '600' },
+  activeFilterText: { color: '#111' },
+  portfolioGrid: { flexDirection: isWeb ? 'row' : 'column', flexWrap: 'wrap', justifyContent: 'center', gap: 32 },
+  projectCardInner: { width: 300, borderRadius: 28, overflow: 'hidden', shadowOffset: { width: 0, height: 8 }, shadowOpacity: 0.06, shadowRadius: 16, elevation: 4 },
+  projectCardHover: { transform: [{ scale: 1.02 }] },
+  projectImagePlaceholder: { height: 180, justifyContent: 'center', alignItems: 'center' },
+  projectContent: { padding: 24, gap: 8 },
+  projectTitle: { fontSize: 22, fontWeight: '700' },
+  projectCategory: { fontSize: 14 },
+  viewBtn: { fontSize: 14, fontWeight: '600', marginTop: 12 },
   // Showcase
-  showcaseContainer: { borderRadius: 48, padding: 60, margin: 40, alignItems: 'center', justifyContent: 'center', gap: 16, borderWidth: 1, borderStyle: 'dashed', minHeight: 300 },
-  showcaseText: { fontSize: 24, fontWeight: '600' },
-  showcaseSubtext: { fontSize: 16 },
-  // Contact
-  contactContainer: { padding: 40, alignItems: 'center', gap: 32, maxWidth: 1000, alignSelf: 'center', width: '100%' },
-  contactGrid: { flexDirection: Platform.OS === 'web' ? 'row' : 'column', gap: 40, width: '100%' },
-  contactLeft: { flex: 1, gap: 16 },
+  showcaseScroll: { paddingHorizontal: 8, gap: 24 },
+  showcaseCard: { width: 200, height: 260, borderRadius: 28, justifyContent: 'center', alignItems: 'center', shadowOffset: { width: 0, height: 8 }, shadowOpacity: 0.06, shadowRadius: 16, elevation: 4 },
+  showcaseTitle: { fontSize: 22, fontWeight: '600' },
+  // Video
+  videoWrapper: { width: '100%', borderRadius: 28, overflow: 'hidden', padding: 8, shadowOffset: { width: 0, height: 12 }, shadowOpacity: 0.08, shadowRadius: 20, elevation: 6 },
+  video: { width: '100%', height: 360, borderRadius: 24 },
+  // Testimonials
+  testimonialGrid: { flexDirection: isWeb ? 'row' : 'column', gap: 32, justifyContent: 'center' },
+  testimonialCardInner: { width: 300, borderRadius: 28, padding: 28, alignItems: 'center', gap: 16, shadowOffset: { width: 0, height: 8 }, shadowOpacity: 0.06, shadowRadius: 16, elevation: 4 },
+  testimonialAvatar: { marginBottom: 4 },
+  testimonialText: { fontSize: 15, textAlign: 'center', lineHeight: 24, fontStyle: 'italic' },
+  testimonialName: { fontSize: 18, fontWeight: '700' },
+  testimonialRole: { fontSize: 13 },
+  // Contact (fixed)
+  contactGrid: { flexDirection: isWeb ? 'row' : 'column', gap: 48 },
+  contactLeft: { flex: 1, gap: 28 },
   contactRight: { flex: 1, gap: 20 },
-  contactInfoItem: { flexDirection: 'row', alignItems: 'center', gap: 16, marginBottom: 24 },
-  contactInfoLabel: { fontSize: 14 },
-  contactInfoValue: { fontSize: 16, fontWeight: '500' },
-  input: { borderRadius: 16, padding: 16, fontSize: 16, borderWidth: 1 },
-  textArea: { height: 100, textAlignVertical: 'top' },
-  sendBtn: { borderRadius: 40, overflow: 'hidden' },
-  sendText: { color: 'white', fontWeight: '600', fontSize: 16 },
+  contactInfoItem: { flexDirection: 'row', alignItems: 'center', gap: 18 },
+  contactInfoLabel: { fontSize: 13, marginBottom: 3 },
+  contactInfoValue: { fontSize: 17, fontWeight: '500' },
+  input: { borderRadius: 16, padding: 18, fontSize: 16, borderWidth: 1 },
+  textArea: { height: 140, textAlignVertical: 'top' },
+  sendBtn: { borderRadius: 50, overflow: 'hidden' },
+  sendText: { color: 'white', fontWeight: '600', fontSize: 16, paddingHorizontal: 28, paddingVertical: 16 },
   // Footer
-  footer: { paddingVertical: 32, alignItems: 'center', borderTopWidth: 1, marginTop: 40 },
-  footerText: { fontSize: 14, textAlign: 'center' },
+  footer: { paddingVertical: 56, paddingHorizontal: 32, marginTop: 64, borderTopWidth: 1 },
+  footerColumns: { flexDirection: isWeb ? 'row' : 'column', justifyContent: 'space-between', gap: 48, maxWidth: 1200, alignSelf: 'center', width: '100%' },
+  footerTitle: { fontSize: 20, fontWeight: '700', marginBottom: 18 },
+  footerText: { fontSize: 15, marginBottom: 10, opacity: 0.8 },
+  socialIcons: { flexDirection: 'row', gap: 24, marginTop: 16 },
+  copyright: { textAlign: 'center', marginTop: 56, fontSize: 14 },
+  sectionHeader: { alignItems: 'center', marginBottom: 40 },
+  sectionTitle: { fontSize: 42, fontWeight: '700', letterSpacing: -0.5, marginBottom: 12 },
+  sectionUnderline: { width: 60, height: 3, borderRadius: 3 },
 });
