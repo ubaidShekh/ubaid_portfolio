@@ -1,7 +1,7 @@
 import { Ionicons } from '@expo/vector-icons';
 import { Video } from 'expo-av';
 import { LinearGradient } from 'expo-linear-gradient';
-import React, { useRef, useState, useEffect } from 'react';
+import React, { useRef, useState } from 'react';
 import {
   Alert,
   Dimensions,
@@ -9,6 +9,7 @@ import {
   Image,
   ImageBackground,
   Linking,
+  Modal,
   Platform,
   Pressable,
   ScrollView,
@@ -17,9 +18,8 @@ import {
   Text,
   TextInput,
   useColorScheme,
-  View,
   useWindowDimensions,
-  Modal
+  View
 } from 'react-native';
 
 const { width: screenWidth } = Dimensions.get('window');
@@ -326,7 +326,8 @@ const PortfolioSection = ({ isDark }) => {
     { id: '1', title: 'Smart Home Automation', category: 'IoT', image: require('../../assets/images/laundry_portfolio.png') },
     { id: '2', title: 'Laundry Service Platform', category: 'App', image: require('../../assets/images/laundry_portfolio.png') },
     { id: '3', title: 'Muslim Community App', category: 'App', image: require('../../assets/images/ummah_connect.png') },
-    { id: '4', title: 'E-commerce Dashboard', category: 'Web', image: require('../../assets/images/laundry_portfolio.png') },
+    { id: '4', title: 'Street Light Monitoring System', category: 'App', image: require('../../assets/images/street_light.png') },
+    { id: '5', title: 'Street Light Monitoring System Admin', category: 'App', image: require('../../assets/images/street_light_admin.jpeg') },
   ];
   const filtered = filter === 'All' ? projects : projects.filter(p => p.category === filter);
   const filters = ['All', 'App', 'IoT', 'Web'];
@@ -669,7 +670,7 @@ const styles = StyleSheet.create({
   activeFilterText: { color: '#111' },
   portfolioGrid: { flexDirection: isWeb ? 'row' : 'row', flexWrap: 'wrap', justifyContent: 'center', gap: 32 },
   mobilePortfolioGrid: { flexDirection: 'column', alignItems: 'center', gap: 24 },
-  projectCardInner: { width: isWeb ? 450 : 320, borderRadius: 28, overflow: 'hidden', shadowOffset: { width: 0, height: 8 }, shadowOpacity: 0.06, shadowRadius: 16, elevation: 4 },
+  projectCardInner: { width: isWeb ? 450 : 320, borderRadius: 0, overflow: 'hidden', shadowOffset: { width: 0, height: 8 }, shadowOpacity: 0.06, shadowRadius: 16, elevation: 4 },
   mobileProjectCard: { width: '100%' },
   projectImage: { height: 280, width: '100%', justifyContent: 'flex-end' },
   mobileProjectImage: { height: 220 },
