@@ -92,7 +92,7 @@ const ProjectCard = ({ project, isDark, onPress, isMobile }) => {
       <ImageBackground 
         style={[styles.projectImage, isMobile && styles.mobileProjectImage]} 
         source={project.image}
-        imageStyle={{ borderRadius: 28 }}
+        imageStyle={{ borderRadius: 0 }}
       >
         <LinearGradient
           colors={['transparent', 'rgba(0,0,0,0.7)']}
@@ -323,7 +323,7 @@ const PortfolioSection = ({ isDark }) => {
   const { isMobile } = useResponsive();
   const [filter, setFilter] = useState('All');
   const projects = [
-    { id: '1', title: 'Smart Home Automation', category: 'IoT', image: require('../../assets/images/laundry_portfolio.png') },
+  //  { id: '1', title: 'Smart Home Automation', category: 'IoT', image: require('../../assets/images/laundry_portfolio.png') },
     { id: '2', title: 'Laundry Service Platform', category: 'App', image: require('../../assets/images/laundry_portfolio.png') },
     { id: '3', title: 'Muslim Community App', category: 'App', image: require('../../assets/images/ummah_connect.png') },
     { id: '4', title: 'Street Light Monitoring System', category: 'App', image: require('../../assets/images/street_light.png') },
@@ -674,7 +674,7 @@ const styles = StyleSheet.create({
   mobilePortfolioGrid: { flexDirection: 'column', alignItems: 'center', gap: 24 },
   projectCardInner: { width: isWeb ? 450 : 320, borderRadius: 0, overflow: 'hidden', shadowOffset: { width: 0, height: 8 }, shadowOpacity: 0.06, shadowRadius: 16, elevation: 4 },
   mobileProjectCard: { width: '100%' },
-  projectImage: { height: 280, width: 450, justifyContent: 'flex-end', },
+  projectImage: { height: 280, width: 450, justifyContent: 'flex-end',resizeMode:'contain' },
   mobileProjectImage: { height: 220 },
   projectOverlay: { padding: 20, borderBottomLeftRadius: 28, borderBottomRightRadius: 28 },
   projectContent: { gap: 8 },
