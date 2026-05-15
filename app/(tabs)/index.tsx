@@ -21,9 +21,11 @@ import {
   useWindowDimensions,
   View
 } from 'react-native';
+import {useRouter} from 'expo-router';
 
 const { width: screenWidth } = Dimensions.get('window');
 const isWeb = Platform.OS === 'web';
+const router = useRouter();
 
 // ------------------------- Responsive Helpers -------------------------
 const useResponsive = () => {
@@ -156,7 +158,15 @@ const Header = ({ isDark, toggleTheme, scrollToSection }) => {
               <Text style={styles.hireBtnText}>Hire Me</Text>
             </LinearGradient>
           </Pressable>
-          <Pressable onPress={toggleTheme} style={styles.themeToggle}>
+        
+           <Pressable style={styles.hireMeBtn} onPress={() =>{
+            router.push('../Screen/Interview');
+           }}>
+            <LinearGradient colors={[colors.accent, '#222']} style={styles.hireBtnGrad}>
+              <Text style={styles.hireBtnText}>Practice</Text>
+            </LinearGradient>
+          </Pressable>
+            <Pressable onPress={toggleTheme} style={styles.themeToggle}>
             <Ionicons name={isDark ? 'sunny' : 'moon'} size={20} color={colors.text} />
           </Pressable>
           {isMobile && (
