@@ -1,6 +1,7 @@
 import { Ionicons } from '@expo/vector-icons';
-import { Video } from 'expo-av';
 import { LinearGradient } from 'expo-linear-gradient';
+import { useRouter } from 'expo-router';
+import { useVideoPlayer, VideoView } from 'expo-video';
 import React, { useRef, useState } from 'react';
 import {
   Alert,
@@ -21,7 +22,6 @@ import {
   useWindowDimensions,
   View
 } from 'react-native';
-import {useRouter} from 'expo-router';
 
 const { width: screenWidth } = Dimensions.get('window');
 const isWeb = Platform.OS === 'web';
@@ -389,22 +389,25 @@ const AppShowcase = ({ isDark }) => {
 
 // ------------------------- Video Demo Section -------------------------
 const VideoDemo = ({ isDark }) => {
-  const video = useRef(null);
+ const data = [{
+  id:1,
+  source:"../../assets/images/NCC.mp4"
+ }]
   const colors = getColors(isDark);
   const { isMobile } = useResponsive();
+  
+  const player = useVideoPlayer("../../assets/images/NCC.mp4", (player)=>{
+    player.loop = true,
+    player.play()
+  })
   return (
     <CardWrapper isDark={isDark} isMobile={isMobile}>
       <SectionTitle title="Project Demo" isDark={isDark} isMobile={isMobile} />
       <View style={[styles.videoWrapper, { backgroundColor: colors.cardBg, shadowColor: colors.cardShadow }]}>
-        <Video
-          ref={video}
-          source={{ uri: 'https://www.w3schools.com/html/mov_bbb.mp4' }}
-          rate={1.0}
-          volume={1.0}
-          isMuted={false}
-          resizeMode="cover"
-          shouldPlay
-          useNativeControls
+        <VideoView
+          player={player}
+        
+         showFullscreen
           style={[styles.video, isMobile && styles.mobileVideo]}
         />
       </View>
