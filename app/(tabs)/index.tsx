@@ -25,7 +25,7 @@ import {
 
 const { width: screenWidth } = Dimensions.get('window');
 const isWeb = Platform.OS === 'web';
-const router = useRouter();
+
 
 // ------------------------- Responsive Helpers -------------------------
 const useResponsive = () => {
@@ -386,49 +386,72 @@ const AppShowcase = ({ isDark }) => {
     </CardWrapper>
   );
 };
+const VideoCard = ({ source, isMobile }) => {
 
-// ------------------------- Video Demo Section -------------------------
-const VideoDemo = ({ isDark }) => {
- const data = [{
-  id:1,
-  source:require("../../assets/images/NCC.mp4")
- },
-{
-  id:2,
-  source:require("../../assets/images/SLMS.mp4")
- }
-]
-  const colors = getColors(isDark);
-  const { isMobile } = useResponsive();
-  
- 
-  return (
-    data.map((item)=>{
- const id = item.id;
- const source = item.source
-  const player = useVideoPlayer(source, (player)=>{
+  const player = useVideoPlayer(source, (player) => {
     player.loop = true;
-    player.play()
-  })
-     return(
-      <>
-   <CardWrapper isDark={isDark} isMobile={isMobile}key={id}>
-      <SectionTitle title="Project Demo" isDark={isDark} isMobile={isMobile} />
-      <View style={[styles.videoWrapper, { backgroundColor: colors.cardBg, shadowColor: colors.cardShadow }]} >
-        <VideoView
-          player={player}
-         allowsFullscreen
-          style={[styles.video, isMobile && styles.mobileVideo]}
-        />
-      </View>
-    </CardWrapper>
-      </>
-     )
-    })
- 
+    player.play();
+  });
+
+  return (
+    <VideoView
+      player={player}
+      allowsFullscreen
+      style={[styles.video, isMobile && styles.mobileVideo]}
+    />
   );
 };
 
+
+
+
+const VideoDemo = ({ isDark }) => {
+
+  const colors = getColors(isDark);
+  const { isMobile } = useResponsive();
+
+  const data = [
+    {
+      id: 1,
+      source: require("../../assets/images/NCC.mp4"),
+    },
+    {
+      id: 2,
+      source: require("../../assets/images/SLMS.mp4"),
+    },
+  ];
+
+  return (
+    <CardWrapper isDark={isDark} isMobile={isMobile}>
+
+      <SectionTitle
+        title="Project Demo"
+        isDark={isDark}
+        isMobile={isMobile}
+      />
+
+      <View
+        style={[
+          styles.videoWrapper,
+          {
+            backgroundColor: colors.cardBg,
+            shadowColor: colors.cardShadow,
+          },
+        ]}
+      >
+        {data.map((item) => (
+          <View key={item.id} style={styles.singleVideoContainer}>
+            <VideoCard
+              source={item.source}
+              isMobile={isMobile}
+            />
+          </View>
+        ))}
+      </View>
+
+    </CardWrapper>
+  );
+};
 // ------------------------- Testimonials -------------------------
 const Testimonials = ({ isDark }) => {
   const { isMobile } = useResponsive();
@@ -547,6 +570,7 @@ export default function App() {
   const toggleTheme = () => setIsDark(prev => !prev);
   const colors = getColors(isDark);
   const { isMobile } = useResponsive();
+  const router = useRouter();
 
   const sectionRefs = {
     home: useRef(null), about: useRef(null), services: useRef(null), portfolio: useRef(null), contact: useRef(null)
@@ -719,8 +743,8 @@ const styles = StyleSheet.create({
   showcaseTitle: { fontSize: 22, fontWeight: '600' },
   mobileShowcaseTitle: { fontSize: 18 },
   // Video
-  videoWrapper: { height: '100%', borderRadius: 28, overflow: 'hidden', padding: 8, shadowOffset: { width: 0, height: 12 }, shadowOpacity: 0.08, shadowRadius: 20, elevation: 6 },
-  video: { height: '40%', width:'35%', borderRadius: 24 },
+  videoWrapper: { height: '100%',  overflow: 'hidden', padding: 8, shadowOffset: { width: 0, height: 12 }, shadowOpacity: 0.08, shadowRadius: 20, elevation: 6 },
+  video: { height: '40%', width:'40%',  },
   mobileVideo: { height: 200 },
   // Testimonials
   testimonialGrid: { flexDirection: isWeb ? 'row' : 'row', gap: 32, justifyContent: 'center' },
@@ -767,4 +791,16 @@ const styles = StyleSheet.create({
   sectionTitle: { fontSize: 42, fontWeight: '700', letterSpacing: -0.5, marginBottom: 12 },
   mobileSectionTitle: { fontSize: 32, marginBottom: 8 },
   sectionUnderline: { width: 60, height: 3, borderRadius: 3 },
+  videoWrapper: {
+  flexDirection: "row",
+  flexWrap: "wrap",
+  gap: 20,
+  flex:1,
+},
+
+singleVideoContainer: {
+  width: '60%',
+  height:'60%',
+  
+},
 });
