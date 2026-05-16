@@ -391,27 +391,41 @@ const AppShowcase = ({ isDark }) => {
 const VideoDemo = ({ isDark }) => {
  const data = [{
   id:1,
-  source:"../../assets/images/NCC.mp4"
- }]
+  source:require("../../assets/images/NCC.mp4")
+ },
+{
+  id:2,
+  source:require("../../assets/images/SLMS.mp4")
+ }
+]
   const colors = getColors(isDark);
   const { isMobile } = useResponsive();
   
-  const player = useVideoPlayer("../../assets/images/NCC.mp4", (player)=>{
-    player.loop = true,
+ 
+  return (
+    data.map((item)=>{
+ const id = item.id;
+ const source = item.source
+  const player = useVideoPlayer(source, (player)=>{
+    player.loop = true;
     player.play()
   })
-  return (
-    <CardWrapper isDark={isDark} isMobile={isMobile}>
+     return(
+      <>
+   <CardWrapper isDark={isDark} isMobile={isMobile}key={id}>
       <SectionTitle title="Project Demo" isDark={isDark} isMobile={isMobile} />
-      <View style={[styles.videoWrapper, { backgroundColor: colors.cardBg, shadowColor: colors.cardShadow }]}>
+      <View style={[styles.videoWrapper, { backgroundColor: colors.cardBg, shadowColor: colors.cardShadow }]} >
         <VideoView
           player={player}
-        
-         showFullscreen
+         allowsFullscreen
           style={[styles.video, isMobile && styles.mobileVideo]}
         />
       </View>
     </CardWrapper>
+      </>
+     )
+    })
+ 
   );
 };
 
@@ -705,8 +719,8 @@ const styles = StyleSheet.create({
   showcaseTitle: { fontSize: 22, fontWeight: '600' },
   mobileShowcaseTitle: { fontSize: 18 },
   // Video
-  videoWrapper: { width: '100%', borderRadius: 28, overflow: 'hidden', padding: 8, shadowOffset: { width: 0, height: 12 }, shadowOpacity: 0.08, shadowRadius: 20, elevation: 6 },
-  video: { width: '100%', height: 360, borderRadius: 24 },
+  videoWrapper: { height: '100%', borderRadius: 28, overflow: 'hidden', padding: 8, shadowOffset: { width: 0, height: 12 }, shadowOpacity: 0.08, shadowRadius: 20, elevation: 6 },
+  video: { height: '40%', width:'35%', borderRadius: 24 },
   mobileVideo: { height: 200 },
   // Testimonials
   testimonialGrid: { flexDirection: isWeb ? 'row' : 'row', gap: 32, justifyContent: 'center' },
