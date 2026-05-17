@@ -8,7 +8,6 @@ import {
   Dimensions,
   FlatList,
   Image,
-  ImageBackground,
   Linking,
   Modal,
   Platform,
@@ -19,95 +18,28 @@ import {
   Text,
   TextInput,
   useColorScheme,
-  useWindowDimensions,
   View
 } from 'react-native';
+import { CardWrapper } from '../../components/CardWrapper';
+import { getColors } from '../../components/Colors';
+import { ProjectCard } from '../../components/ProjectCard';
+import { SectionTitle } from '../../components/SectionTitle';
+import { ServiceCard } from '../../components/ServiceCard';
+import { useResponsive } from '../../components/useResponsive';
+
+
+
+
 
 const { width: screenWidth } = Dimensions.get('window');
 const isWeb = Platform.OS === 'web';
 
 
-// ------------------------- Responsive Helpers -------------------------
-const useResponsive = () => {
-  const { width } = useWindowDimensions();
-  const isMobile = width < 768;
-  const isTablet = width >= 768 && width < 1024;
-  return { isMobile, isTablet, width };
-};
 
-// ------------------------- Premium Theme -------------------------
-const getColors = (isDark) => ({
-  background: isDark ? '#0a0a0a' : '#f5f5f7',
-  cardBg: isDark ? '#141414' : '#ffffff',
-  text: isDark ? '#ededed' : '#111111',
-  subText: isDark ? '#9e9e9e' : '#5a5a5a',
-  border: isDark ? '#2a2a2a' : '#e8e8e8',
-  glassBg: isDark ? 'rgba(20,20,20,0.92)' : 'rgba(255,255,255,0.95)',
-  tagBg: isDark ? '#2a2a2a' : '#f0f0f0',
-  cardShadow: isDark ? '#00000060' : '#00000008',
-  accent: '#3b3b3b',
-  accentLight: '#6b6b6b',
-});
 
-// ------------------------- Reusable Components -------------------------
-const SectionTitle = ({ title, isDark, isMobile }) => {
-  const colors = getColors(isDark);
-  return (
-    <View style={styles.sectionHeader}>
-      <Text style={[styles.sectionTitle, { color: colors.text }, isMobile && styles.mobileSectionTitle]}>{title}</Text>
-      <View style={[styles.sectionUnderline, { backgroundColor: colors.accent }]} />
-    </View>
-  );
-};
 
-const CardWrapper = ({ children, isDark, style, isMobile }) => {
-  const colors = getColors(isDark);
-  return (
-    <View style={[
-      styles.card, 
-      { backgroundColor: colors.cardBg, shadowColor: colors.cardShadow },
-      isMobile && styles.mobileCard,
-      style
-    ]}>
-      {children}
-    </View>
-  );
-};
 
-const ServiceCard = ({ icon, title, desc, isDark, isMobile }) => {
-  const colors = getColors(isDark);
-  return (
-    <Pressable style={({ hovered }) => [styles.serviceCardInner, { backgroundColor: colors.cardBg }, hovered && styles.cardHover, isMobile && styles.mobileServiceCard]}>
-      <View style={[styles.serviceIcon, { backgroundColor: colors.tagBg }]}>
-        <Ionicons name={icon} size={isMobile ? 24 : 28} color={colors.accent} />
-      </View>
-      <Text style={[styles.serviceTitle, { color: colors.text }, isMobile && styles.mobileServiceTitle]}>{title}</Text>
-      <Text style={[styles.serviceDesc, { color: colors.subText }, isMobile && styles.mobileServiceDesc]}>{desc}</Text>
-    </Pressable>
-  );
-};
 
-const ProjectCard = ({ project, isDark, onPress, isMobile }) => {
-  const colors = getColors(isDark);
-  return (
-    <Pressable style={({ hovered }) => [styles.projectCardInner, { backgroundColor: colors.cardBg }, hovered && styles.projectCardHover, isMobile && styles.mobileProjectCard]} onPress={onPress}>
-      <ImageBackground 
-        style={[styles.projectImage, isMobile && styles.mobileProjectImage]} 
-        source={project.image}
-        imageStyle={{ borderRadius: 0 }}
-      >
-        <LinearGradient
-          colors={['transparent', 'rgba(0,0,0,0.7)']}
-          style={styles.projectOverlay}
-        >
-          <View style={styles.projectContent}>
-      
-          </View>
-        </LinearGradient>
-      </ImageBackground>
-    </Pressable>
-  );
-};
 
 const TestimonialCard = ({ testimonial, isDark, isMobile }) => {
   const colors = getColors(isDark);
@@ -134,6 +66,7 @@ const Header = ({ isDark, toggleTheme, scrollToSection }) => {
     scrollToSection(item.toLowerCase());
     setMobileMenu(false);
   };
+    const router = useRouter();
 
   return (
     <>
@@ -629,18 +562,7 @@ const styles = StyleSheet.create({
   mobileMenuContainer: { marginTop: 70, marginHorizontal: 16, borderRadius: 20, paddingVertical: 20, paddingHorizontal: 16, elevation: 5, shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.1, shadowRadius: 12 },
   mobileNavItem: { paddingVertical: 14, borderBottomWidth: 1, borderBottomColor: '#eee' },
   mobileNavLink: { fontSize: 18, fontWeight: '500', textAlign: 'center' },
-  // Card wrapper
-  card: {
-    marginHorizontal: isWeb ? 40 : 20,
-    marginVertical: 24,
-    padding: isWeb ? 48 : 28,
-    borderRadius: 40,
-    shadowOffset: { width: 0, height: 12 },
-    shadowOpacity: 0.08,
-    shadowRadius: 24,
-    elevation: 8,
-  },
-  mobileCard: { marginHorizontal: 16, marginVertical: 16, padding: 20, borderRadius: 28 },
+
   // Hero
   heroContainer: {
     flexDirection: isWeb ? 'row' : 'row',
@@ -696,14 +618,7 @@ const styles = StyleSheet.create({
   // Services
   servicesGrid: { flexDirection: isWeb ? 'row' : 'row', flexWrap: 'wrap', justifyContent: 'center', gap: 32 },
   mobileServicesGrid: { flexDirection: 'column', alignItems: 'center', gap: 24 },
-  serviceCardInner: { width: 260, borderRadius: 28, padding: 28, alignItems: 'center', gap: 18, shadowOffset: { width: 0, height: 8 }, shadowOpacity: 0.06, shadowRadius: 16, elevation: 4 },
-  mobileServiceCard: { width: '100%', padding: 20, gap: 14 },
-  cardHover: { transform: [{ scale: 1.02 }], shadowOpacity: 0.12 },
-  serviceIcon: { padding: 16, borderRadius: 60 },
-  serviceTitle: { fontSize: 20, fontWeight: '700', textAlign: 'center' },
-  mobileServiceTitle: { fontSize: 18 },
-  serviceDesc: { fontSize: 14, textAlign: 'center', lineHeight: 22 },
-  mobileServiceDesc: { fontSize: 13, lineHeight: 20 },
+
   // Skills
   tagsWrapper: { flexDirection: 'row', flexWrap: 'wrap', justifyContent: 'center', gap: 12 },
   mobileTagsWrapper: { gap: 10 },
@@ -723,18 +638,15 @@ const styles = StyleSheet.create({
   activeFilterText: { color: '#111' },
   portfolioGrid: { flexDirection: isWeb ? 'row' : 'row', flexWrap: 'wrap', justifyContent: 'center', gap: 32 },
   mobilePortfolioGrid: { flexDirection: 'column', alignItems: 'center', gap: 24 },
-  projectCardInner: { width: isWeb ? 450 : 320, borderRadius: 0, overflow: 'hidden', shadowOffset: { width: 0, height: 8 }, shadowOpacity: 0.06, shadowRadius: 16, elevation: 4 },
-  mobileProjectCard: { width: '100%' },
-  projectImage: { height: 280, width: 450, justifyContent: 'flex-end',resizeMode:'contain' },
-  mobileProjectImage: { height: 220 },
-  projectOverlay: { padding: 20, borderBottomLeftRadius: 28, borderBottomRightRadius: 28 },
-  projectContent: { gap: 8 },
+
+
+
   projectTitle: { fontSize: 22, fontWeight: '700' },
   mobileProjectTitle: { fontSize: 18 },
   projectCategory: { fontSize: 14 },
   mobileProjectCategory: { fontSize: 12 },
   viewBtn: { fontSize: 14, fontWeight: '600', marginTop: 12 },
-  projectCardHover: { transform: [{ scale: 1.02 }] },
+
   // Showcase
   showcaseScroll: { paddingHorizontal: 8, gap: 24 },
   mobileShowcaseScroll: { gap: 16 },
@@ -787,10 +699,8 @@ const styles = StyleSheet.create({
   socialIcons: { flexDirection: 'row', gap: 24, marginTop: 16 },
   copyright: { textAlign: 'center', marginTop: 56, fontSize: 14 },
   mobileCopyright: { fontSize: 12, marginTop: 32 },
-  sectionHeader: { alignItems: 'center', marginBottom: 40 },
-  sectionTitle: { fontSize: 42, fontWeight: '700', letterSpacing: -0.5, marginBottom: 12 },
-  mobileSectionTitle: { fontSize: 32, marginBottom: 8 },
-  sectionUnderline: { width: 60, height: 3, borderRadius: 3 },
+ 
+
   videoWrapper: {
   flexDirection: "row",
   flexWrap: "wrap",
