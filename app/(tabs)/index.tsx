@@ -8,8 +8,6 @@ import {
   Dimensions,
   FlatList,
   Image,
-  Linking,
-  Modal,
   Platform,
   Pressable,
   ScrollView,
@@ -22,11 +20,13 @@ import {
 } from 'react-native';
 import { CardWrapper } from '../../components/CardWrapper';
 import { getColors } from '../../components/Colors';
+import { Header } from '../../components/Header';
+import { HeroSection } from '../../components/HeroSection';
 import { ProjectCard } from '../../components/ProjectCard';
 import { SectionTitle } from '../../components/SectionTitle';
 import { ServiceCard } from '../../components/ServiceCard';
+import { TestimonialCard } from '../../components/TestimonialCard';
 import { useResponsive } from '../../components/useResponsive';
-
 
 
 
@@ -41,151 +41,9 @@ const isWeb = Platform.OS === 'web';
 
 
 
-const TestimonialCard = ({ testimonial, isDark, isMobile }) => {
-  const colors = getColors(isDark);
-  return (
-    <View style={[styles.testimonialCardInner, { backgroundColor: colors.cardBg, shadowColor: colors.cardShadow }, isMobile && styles.mobileTestimonialCard]}>
-      <View style={styles.testimonialAvatar}>
-        <Ionicons name="person-circle" size={isMobile ? 48 : 56} color={colors.accentLight} />
-      </View>
-      <Text style={[styles.testimonialText, { color: colors.subText }, isMobile && styles.mobileTestimonialText]}>“{testimonial.feedback}”</Text>
-      <Text style={[styles.testimonialName, { color: colors.text }, isMobile && styles.mobileTestimonialName]}>{testimonial.name}</Text>
-      <Text style={[styles.testimonialRole, { color: colors.subText }, isMobile && styles.mobileTestimonialRole]}>{testimonial.role}</Text>
-    </View>
-  );
-};
 
-// ------------------------- Header (Mobile Optimized) -------------------------
-const Header = ({ isDark, toggleTheme, scrollToSection }) => {
-  const colors = getColors(isDark);
-  const { isMobile } = useResponsive();
-  const [mobileMenu, setMobileMenu] = useState(false);
-  const navItems = ['Home', 'About', 'Services', 'Portfolio', 'Contact'];
 
-  const handleNavPress = (item) => {
-    scrollToSection(item.toLowerCase());
-    setMobileMenu(false);
-  };
-    const router = useRouter();
 
-  return (
-    <>
-      <View style={[styles.header, isWeb && styles.headerWeb, { backgroundColor: colors.glassBg, borderBottomColor: colors.border }, isMobile && styles.mobileHeader]}>
-        <Pressable onPress={() => scrollToSection('home')}>
-          <Text style={[styles.logo, { color: colors.text }, isMobile && styles.mobileLogo]}>Mohammad Ubaid</Text>
-        </Pressable>
-        
-        {!isMobile && (
-          <View style={styles.navLinks}>
-            {navItems.map((item) => (
-              <Pressable key={item} onPress={() => scrollToSection(item.toLowerCase())}>
-                <Text style={[styles.navLink, { color: colors.subText }]}>{item}</Text>
-              </Pressable>
-            ))}
-          </View>
-        )}
-        
-        <View style={styles.headerActions}>
-          <Pressable style={styles.hireMeBtn} onPress={() => scrollToSection('contact')}>
-            <LinearGradient colors={[colors.accent, '#222']} style={styles.hireBtnGrad}>
-              <Text style={styles.hireBtnText}>Hire Me</Text>
-            </LinearGradient>
-          </Pressable>
-        
-           <Pressable style={styles.hireMeBtn} onPress={() =>{
-            router.push('../Screen/Interview');
-           }}>
-            <LinearGradient colors={[colors.accent, '#222']} style={styles.hireBtnGrad}>
-              <Text style={styles.hireBtnText}>Practice</Text>
-            </LinearGradient>
-          </Pressable>
-            <Pressable onPress={toggleTheme} style={styles.themeToggle}>
-            <Ionicons name={isDark ? 'sunny' : 'moon'} size={20} color={colors.text} />
-          </Pressable>
-          {isMobile && (
-            <Pressable onPress={() => setMobileMenu(!mobileMenu)}>
-              <Ionicons name={mobileMenu ? 'close' : 'menu'} size={24} color={colors.text} />
-            </Pressable>
-          )}
-        </View>
-      </View>
-
-      {/* Mobile Menu Modal */}
-      {isMobile && (
-        <Modal
-          visible={mobileMenu}
-          transparent={true}
-          animationType="fade"
-          onRequestClose={() => setMobileMenu(false)}
-        >
-          <Pressable style={styles.modalOverlay} onPress={() => setMobileMenu(false)}>
-            <View style={[styles.mobileMenuContainer, { backgroundColor: colors.cardBg }]}>
-              {navItems.map((item) => (
-                <Pressable key={item} style={styles.mobileNavItem} onPress={() => handleNavPress(item)}>
-                  <Text style={[styles.mobileNavLink, { color: colors.text }]}>{item}</Text>
-                </Pressable>
-              ))}
-            </View>
-          </Pressable>
-        </Modal>
-      )}
-    </>
-  );
-};
-
-// ------------------------- Hero Section -------------------------
-const HeroSection = ({ isDark }) => {
-  const colors = getColors(isDark);
-  const { isMobile } = useResponsive();
-  const downloadCV = () => {
-    const url = "https://drive.google.com/uc?export=download&id=1DhO6T8vQHx_qwV8TKk2pjOvvqfHxT70w";
-    Linking.openURL(url);
-  };
-  
-  return (
-    <View style={[styles.heroContainer, isMobile && styles.mobileHeroContainer]}>
-      <View style={styles.heroLeft}>
-        <Text style={[styles.heroIntro, { color: colors.accent }, isMobile && styles.mobileHeroIntro]}>HELLO, I'M UBAID</Text>
-        <Text style={[styles.heroTitle, { color: colors.text }, isMobile && styles.mobileHeroTitle]}>
-          Mobile App Developer &<Text style={styles.gradientText}> UI/UX Designer</Text>
-        </Text>
-        <Text style={[styles.heroDesc, { color: colors.subText }, isMobile && styles.mobileHeroDesc]}>
-          Crafting high-performance mobile apps with React Native and modern UI/UX. 
-          4+ years of turning ideas into delightful digital experiences.
-        </Text>
-        <View style={[styles.heroButtons, isMobile && styles.mobileHeroButtons]}>
-          <Pressable style={styles.downloadBtn} onPress={downloadCV}>
-            <LinearGradient colors={[colors.accent, '#222']} style={styles.gradientBtn}>
-              <Text style={styles.btnText}>Download CV</Text>
-            </LinearGradient>
-          </Pressable>
-          <Pressable style={[styles.hireOutlineBtn, { borderColor: colors.accent }]} onPress={() => Alert.alert("Contact", "Reach out via email or phone")}>
-            <Text style={[styles.outlineText, { color: colors.accent }]}>Hire Me</Text>
-          </Pressable>
-        </View>
-      </View>
-      {!isMobile && (
-        <View style={styles.heroRight}>
-          <View style={styles.profileWrapper}>
-            <View style={[styles.profileBorder, { borderColor: colors.border }]}>
-              <Image source={require('../../assets/images/profile.png')} style={styles.profileImage} />
-            </View>
-            <View style={[styles.floatingShape, styles.shape1, { backgroundColor: colors.accent, opacity: 0.08 }]} />
-            <View style={[styles.floatingShape, styles.shape2, { backgroundColor: colors.accent, opacity: 0.08 }]} />
-            <View style={[styles.floatingShape, styles.shape3, { backgroundColor: colors.accentLight, opacity: 0.05 }]} />
-          </View>
-        </View>
-      )}
-      {isMobile && (
-        <View style={styles.heroRightMobile}>
-          <View style={[styles.profileBorderMobile, { borderColor: colors.border }]}>
-            <Image source={require('../../assets/images/profile.png')} style={styles.profileImageMobile} />
-          </View>
-        </View>
-      )}
-    </View>
-  );
-};
 
 // ------------------------- About Section -------------------------
 const AboutSection = ({ isDark }) => {
@@ -537,69 +395,9 @@ export default function App() {
 // ------------------------- Styles (Enhanced with Mobile Responsive) -------------------------
 const styles = StyleSheet.create({
   main: { flex: 1 },
-  // Header
-  header: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    paddingHorizontal: isWeb ? 48 : 20,
-    paddingVertical: isWeb ? 20 : 16,
-    borderBottomWidth: 1,
-  },
-  headerWeb: { position: 'sticky', top: 0, zIndex: 100, backdropFilter: 'blur(16px)' },
-  mobileHeader: { paddingHorizontal: 16, paddingVertical: 12 },
-  logo: { fontSize: 26, fontWeight: '700', letterSpacing: -0.5 },
-  mobileLogo: { fontSize: 20 },
-  navLinks: { flexDirection: 'row', gap: 40 },
-  navLink: { fontSize: 15, fontWeight: '500', letterSpacing: 0.3 },
-  headerActions: { flexDirection: 'row', alignItems: 'center', gap: 20 },
-  hireMeBtn: { borderRadius: 40, overflow: 'hidden' },
-  hireBtnGrad: { paddingHorizontal: 22, paddingVertical: 11 },
-  hireBtnText: { color: 'white', fontWeight: '600', fontSize: 14 },
-  themeToggle: { padding: 8 },
-  // Mobile Menu Modal
-  modalOverlay: { flex: 1, backgroundColor: 'rgba(0,0,0,0.5)', justifyContent: 'flex-start' },
-  mobileMenuContainer: { marginTop: 70, marginHorizontal: 16, borderRadius: 20, paddingVertical: 20, paddingHorizontal: 16, elevation: 5, shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.1, shadowRadius: 12 },
-  mobileNavItem: { paddingVertical: 14, borderBottomWidth: 1, borderBottomColor: '#eee' },
-  mobileNavLink: { fontSize: 18, fontWeight: '500', textAlign: 'center' },
+  
 
-  // Hero
-  heroContainer: {
-    flexDirection: isWeb ? 'row' : 'row',
-    padding: isWeb ? 64 : 32,
-    gap: 48,
-    maxWidth: 1280,
-    alignSelf: 'center',
-    alignItems: 'center',
-  },
-  mobileHeroContainer: { flexDirection: 'column', padding: 24, gap: 32 },
-  heroLeft: { flex: 1, gap: 24 },
-  heroRight: { flex: 1, alignItems: 'center' },
-  heroRightMobile: { alignItems: 'center', marginTop: 20 },
-  heroIntro: { fontSize: 14, letterSpacing: 3, fontWeight: '600' },
-  mobileHeroIntro: { fontSize: 12, letterSpacing: 2 },
-  heroTitle: { fontSize: 52, fontWeight: '700', lineHeight: 62, letterSpacing: -1 },
-  mobileHeroTitle: { fontSize: 32, lineHeight: 42 },
-  gradientText: { backgroundImage: 'linear-gradient(135deg, #4a4a4a, #8a8a8a)', WebkitBackgroundClip: 'text', color: 'transparent' },
-  heroDesc: { fontSize: 17, lineHeight: 28, opacity: 0.85 },
-  mobileHeroDesc: { fontSize: 15, lineHeight: 24 },
-  heroButtons: { flexDirection: 'row', gap: 24, marginTop: 8 },
-  mobileHeroButtons: { gap: 16, flexWrap: 'wrap' },
-  downloadBtn: { borderRadius: 50, overflow: 'hidden' },
-  gradientBtn: { paddingHorizontal: 36, paddingVertical: 15, alignItems: 'center' },
-  btnText: { color: 'white', fontWeight: '600', fontSize: 16 },
-  hireOutlineBtn: { borderWidth: 1.5, borderRadius: 50, paddingHorizontal: 36, paddingVertical: 15 },
-  outlineText: { fontWeight: '600', fontSize: 16 },
-  profileWrapper: { width: 280, height: 280, position: 'relative' },
-  profileBorder: { width: '100%', height: '100%', borderRadius: 140, borderWidth: 2, padding: 5 },
-  profileImage: { width: '100%', height: '100%', borderRadius: 140 },
-  profileBorderMobile: { width: 200, height: 200, borderRadius: 100, borderWidth: 2, padding: 4 },
-  profileImageMobile: { width: '100%', height: '100%', borderRadius: 100 },
-  floatingShape: { position: 'absolute', width: 80, height: 80, borderRadius: 40 },
-  shape1: { top: -30, right: -30 },
-  shape2: { bottom: -30, left: -30 },
-  shape3: { top: '30%', left: -20, width: 50, height: 50 },
-  // About
+
   aboutGrid: { flexDirection: isWeb ? 'row' : 'row', gap: 48 },
   mobileAboutGrid: { flexDirection: 'column', gap: 32 },
   aboutLeft: { flex: 1, alignItems: 'center' },
@@ -661,15 +459,7 @@ const styles = StyleSheet.create({
   // Testimonials
   testimonialGrid: { flexDirection: isWeb ? 'row' : 'row', gap: 32, justifyContent: 'center' },
   mobileTestimonialGrid: { flexDirection: 'column', alignItems: 'center', gap: 24 },
-  testimonialCardInner: { width: 300, borderRadius: 28, padding: 28, alignItems: 'center', gap: 16, shadowOffset: { width: 0, height: 8 }, shadowOpacity: 0.06, shadowRadius: 16, elevation: 4 },
-  mobileTestimonialCard: { width: '100%', padding: 20, gap: 12 },
-  testimonialAvatar: { marginBottom: 4 },
-  testimonialText: { fontSize: 15, textAlign: 'center', lineHeight: 24, fontStyle: 'italic' },
-  mobileTestimonialText: { fontSize: 14, lineHeight: 20 },
-  testimonialName: { fontSize: 18, fontWeight: '700' },
-  mobileTestimonialName: { fontSize: 16 },
-  testimonialRole: { fontSize: 13 },
-  mobileTestimonialRole: { fontSize: 12 },
+
   // Contact
   contactGrid: { flexDirection: isWeb ? 'row' : 'row', gap: 48 },
   mobileContactGrid: { flexDirection: 'column', gap: 32 },
