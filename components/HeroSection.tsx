@@ -58,6 +58,7 @@ export const HeroSection = ({ isDark }) => {
   );
 };
 const styles = StyleSheet.create({
+  
     // Hero
   heroContainer: {
     flexDirection: isWeb ? 'row' : 'row',

@@ -29,21 +29,8 @@ import { TestimonialCard } from '../../components/TestimonialCard';
 import { useResponsive } from '../../components/useResponsive';
 
 
-
-
 const { width: screenWidth } = Dimensions.get('window');
 const isWeb = Platform.OS === 'web';
-
-
-
-
-
-
-
-
-
-
-
 
 // ------------------------- About Section -------------------------
 const AboutSection = ({ isDark }) => {
@@ -177,8 +164,8 @@ const AppShowcase = ({ isDark }) => {
     </CardWrapper>
   );
 };
-const VideoCard = ({ source, isMobile }) => {
-
+// ------------------------- Video Card (Forced fill) -------------------------
+const VideoCard = ({ source }) => {
   const player = useVideoPlayer(source, (player) => {
     player.loop = true;
     player.play();
@@ -188,58 +175,49 @@ const VideoCard = ({ source, isMobile }) => {
     <VideoView
       player={player}
       allowsFullscreen
-      style={[styles.video, isMobile && styles.mobileVideo]}
+      style={styles.video}
+      contentFit="cover"    // Ensures video fills entire container without gaps
     />
   );
 };
 
-
-
-
+// ------------------------- Video Demo (Horizontal Scroll, Equal Size) -------------------------
 const VideoDemo = ({ isDark }) => {
-
   const colors = getColors(isDark);
-  const { isMobile } = useResponsive();
+  const { isMobile, screenWidth } = useResponsive(); // screenWidth from Dimensions
 
   const data = [
-    {
-      id: 1,
-      source: require("../../assets/images/NCC.mp4"),
-    },
-    {
-      id: 2,
-      source: require("../../assets/images/SLMS.mp4"),
-    },
+    { id: 1, source: require("../../assets/images/NCC.mp4") },
+    { id: 2, source: require("../../assets/images/SLMS.mp4") },
+    // Add more videos freely – all will have identical size
   ];
+
+  // Fixed size for every video card
+  const cardWidth = isMobile ? screenWidth * 0.85 : 480;
+  // Height derived from width using fixed 16:9 aspect ratio
+  const cardHeight = cardWidth * (9 / 16);
 
   return (
     <CardWrapper isDark={isDark} isMobile={isMobile}>
+      <SectionTitle title="Project Demo" isDark={isDark} isMobile={isMobile} />
 
-      <SectionTitle
-        title="Project Demo"
-        isDark={isDark}
-        isMobile={isMobile}
-      />
-
-      <View
-        style={[
-          styles.videoWrapper,
-          {
-            backgroundColor: colors.cardBg,
-            shadowColor: colors.cardShadow,
-          },
-        ]}
-      >
-        {data.map((item) => (
-          <View key={item.id} style={styles.singleVideoContainer}>
-            <VideoCard
-              source={item.source}
-              isMobile={isMobile}
-            />
+      <FlatList
+        data={data}
+        horizontal
+        showsHorizontalScrollIndicator={false}
+        contentContainerStyle={styles.horizontalVideoList}
+        renderItem={({ item }) => (
+          <View
+            style={[
+              styles.singleVideoContainer,
+              { width: cardWidth, height: cardHeight },
+            ]}
+          >
+            <VideoCard source={item.source} />
           </View>
-        ))}
-      </View>
-
+        )}
+        keyExtractor={(item) => item.id.toString()}
+      />
     </CardWrapper>
   );
 };
@@ -396,7 +374,48 @@ export default function App() {
 const styles = StyleSheet.create({
   main: { flex: 1 },
   
+  
+  // ========== VIDEO DEMO (Equal Size, Horizontal Scroll) ==========
+  horizontalVideoList: {
+    paddingHorizontal: 16,
+    gap: 24,
+    alignItems: 'center',
+  },
+  singleVideoContainer: {
+    backgroundColor: '#000',
+    borderRadius: 20,
+    overflow: 'hidden',
+    // No aspectRatio here – width and height are set explicitly in the component
+  },
+  video: {
+    width: '100%',
+    height: '100%',},
+ 
 
+  // ========== VIDEO DEMO (Fixed) ==========
+  videoWrapper: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    justifyContent: 'center',
+    gap: 24,
+    padding: 16,
+    borderRadius: 24,
+    shadowOffset: { width: 0, height: 12 },
+    shadowOpacity: 0.08,
+    shadowRadius: 20,
+    elevation: 6,
+  },
+  mobileVideoWrapper: {
+    flexDirection: 'column',
+    alignItems: 'center',
+    gap: 20,
+    padding: 12,
+  },
+
+  mobileVideo: {
+    width: '100%',
+    height: '100%',
+  },
 
   aboutGrid: { flexDirection: isWeb ? 'row' : 'row', gap: 48 },
   mobileAboutGrid: { flexDirection: 'column', gap: 32 },
