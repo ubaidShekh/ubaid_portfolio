@@ -176,7 +176,7 @@ const VideoCard = ({ source }) => {
       player={player}
       allowsFullscreen
       style={styles.video}
-      contentFit="cover"    // Ensures video fills entire container without gaps
+        // Ensures video fills entire container without gaps
     />
   );
 };
@@ -193,9 +193,10 @@ const VideoDemo = ({ isDark }) => {
   ];
 
   // Fixed size for every video card
-  const cardWidth = isMobile ? screenWidth * 0.85 : 480;
+  const cardWidth = isMobile ? screenWidth * 0.85 : 720;
   // Height derived from width using fixed 16:9 aspect ratio
-  const cardHeight = cardWidth * (9 / 16);
+  //const cardHeight = cardWidth * (9 / 16);
+  const cardHeight = 1080
 
   return (
     <CardWrapper isDark={isDark} isMobile={isMobile}>
@@ -389,7 +390,7 @@ const styles = StyleSheet.create({
   },
   video: {
     width: '100%',
-    height: '100%',},
+    height: 600,},
  
 
   // ========== VIDEO DEMO (Fixed) ==========
